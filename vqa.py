@@ -34,7 +34,7 @@ clip_model = CLIPModel.from_pretrained("openai/clip-vit-base-patch32")
 clip_processor = CLIPProcessor.from_pretrained("openai/clip-vit-base-patch32")
 
 
-# Step 5: 使用 CLIP 模型计算嵌入，并确保文本不会超长
+# Step 5: 使用 CLIP 模型计算嵌入
 def compute_image_embedding(image):
     inputs = clip_processor(images=image, return_tensors="pt")
     with torch.no_grad():
@@ -43,7 +43,6 @@ def compute_image_embedding(image):
 
 
 def compute_text_embedding(text):
-    # 添加 truncation=True 以确保文本自动截断为 77 个 token
     inputs = clip_processor(text=[text], return_tensors="pt", padding=True, truncation=True, max_length=77)
     with torch.no_grad():
         text_embedding = clip_model.get_text_features(**inputs)
@@ -74,7 +73,7 @@ text_index = build_faiss_index(text_embeddings)
 # Step 7: 使用测试样本进行检索
 test_image_path = "path/to/Flickr8k/test_image.jpg"
 test_question = "What is in the picture?"
-test_answer = "A cat is sitting on the couch."  # 假设这是测试样本的正确答案
+test_answer = "A cat is sitting on the couch."
 
 
 def search_with_clip(vqa_image_path, vqa_question, image_index, text_index, k=3):
@@ -90,9 +89,9 @@ def search_with_clip(vqa_image_path, vqa_question, image_index, text_index, k=3)
     D_image, I_image = image_index.search(text_embedding, k)
     image_results = [(i, d) for i, d in zip(I_image[0], D_image[0])]
 
-    # 返回两个检索结果的交集（取出最相关的图文对），限制为 k 个结果
+    # 返回两个检索结果的交集（取出最相关的图文对）
     result_ids = list(set([i for i, _ in text_results] + [i for i, _ in image_results]))
-    return [list(candidate_examples.items())[i] for i in result_ids[:k]]  # 只返回 k 个示例
+    return [list(candidate_examples.items())[i] for i in result_ids[:k]]
 
 
 # 使用 FAISS 检索最匹配的三个图文对
